@@ -1,0 +1,58 @@
+diff --git a/dlls/dinput/device.c b/dlls/dinput/device.c
+index db4507d..d26e08f 100644
+--- a/dlls/dinput/device.c
++++ b/dlls/dinput/device.c
+@@ -298,20 +298,20 @@ void fill_DataFormat(void *out, DWORD size, const void *in, const DataFormat *df
+ 	    if (df->dt[i].offset_in >= 0) {
+ 		switch (df->dt[i].size) {
+ 		    case 1:
+-		        TRACE("Copying (c) to %d from %d (value %d)\n",
+-                              df->dt[i].offset_out, df->dt[i].offset_in, *(in_c + df->dt[i].offset_in));
++//		        TRACE("Copying (c) to %d from %d (value %d)\n",
++  //                            df->dt[i].offset_out, df->dt[i].offset_in, *(in_c + df->dt[i].offset_in));
+ 			*(out_c + df->dt[i].offset_out) = *(in_c + df->dt[i].offset_in);
+ 			break;
+ 
+ 		    case 2:
+-			TRACE("Copying (s) to %d from %d (value %d)\n",
+-			      df->dt[i].offset_out, df->dt[i].offset_in, *((const short *)(in_c + df->dt[i].offset_in)));
++		//	TRACE("Copying (s) to %d from %d (value %d)\n",
++			//      df->dt[i].offset_out, df->dt[i].offset_in, *((const short *)(in_c + df->dt[i].offset_in)));
+ 			*((short *)(out_c + df->dt[i].offset_out)) = *((const short *)(in_c + df->dt[i].offset_in));
+ 			break;
+ 
+ 		    case 4:
+-			TRACE("Copying (i) to %d from %d (value %d)\n",
+-                              df->dt[i].offset_out, df->dt[i].offset_in, *((const int *)(in_c + df->dt[i].offset_in)));
++	//		TRACE("Copying (i) to %d from %d (value %d)\n",
++    //                          df->dt[i].offset_out, df->dt[i].offset_in, *((const int *)(in_c + df->dt[i].offset_in)));
+                         *((int *)(out_c + df->dt[i].offset_out)) = *((const int *)(in_c + df->dt[i].offset_in));
+ 			break;
+ 
+@@ -322,20 +322,20 @@ void fill_DataFormat(void *out, DWORD size, const void *in, const DataFormat *df
+ 	    } else {
+ 		switch (df->dt[i].size) {
+ 		    case 1:
+-		        TRACE("Copying (c) to %d default value %d\n",
+-			      df->dt[i].offset_out, df->dt[i].value);
++//		        TRACE("Copying (c) to %d default value %d\n",
++	//		      df->dt[i].offset_out, df->dt[i].value);
+ 			*(out_c + df->dt[i].offset_out) = (char) df->dt[i].value;
+ 			break;
+ 			
+ 		    case 2:
+-			TRACE("Copying (s) to %d default value %d\n",
+-			      df->dt[i].offset_out, df->dt[i].value);
++		//	TRACE("Copying (s) to %d default value %d\n",
++			//      df->dt[i].offset_out, df->dt[i].value);
+ 			*((short *) (out_c + df->dt[i].offset_out)) = (short) df->dt[i].value;
+ 			break;
+ 			
+ 		    case 4:
+-			TRACE("Copying (i) to %d default value %d\n",
+-			      df->dt[i].offset_out, df->dt[i].value);
++//			TRACE("Copying (i) to %d default value %d\n",
++	//		      df->dt[i].offset_out, df->dt[i].value);
+ 			*((int *) (out_c + df->dt[i].offset_out)) = df->dt[i].value;
+ 			break;
+ 			
