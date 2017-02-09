@@ -1,0 +1,54 @@
+diff --git a/dlls/ntdll/heap.c b/dlls/ntdll/heap.c
+index f928ebf..bbf86cf 100644
+--- a/dlls/ntdll/heap.c
++++ b/dlls/ntdll/heap.c
+@@ -1635,6 +1635,25 @@ HANDLE WINAPI RtlDestroyHeap( HANDLE heap )
+ }
+ 
+ 
++void _account(void *p, int sz)
++{
++   static struct
++   {
++    void *ptr;
++    int sz;
++   } *table;
++   static int limit=1000000, _sum;
++   int i,ok=0;
++   static CRITICAL_SECTION as;
++
++   if(!table) {table=malloc(sizeof(*table) * limit);} //RtlInitializeCriticalSection(&as); }
++//   RtlEnterCriticalSection(&as);
++   if(sz) { for(i=0;i<limit;i++) if(!table[i].ptr) { table[i].ptr=p;table[i].sz=sz; _sum+=sz;ok++;break;} }
++   else { for(i=0;i<limit;i++) if(table[i].ptr==p) { table[i].ptr=NULL; _sum-=table[i].sz;ok++;break;} }
++printf("CURRENT MEM %7d %5.2f %s (sz %d, OK %d, I %d)\n",_sum,_sum/1024/1024.0,sz?"ALLOC":"FREE",sz,ok,i);
++//   RtlLeaveCriticalSection(&as);
++}
++
+ /***********************************************************************
+  *           RtlAllocateHeap   (NTDLL.@)
+  *
+@@ -1681,6 +1700,7 @@ PVOID WINAPI RtlAllocateHeap( HANDLE heap, ULONG flags, SIZE_T size )
+         if (!(flags & HEAP_NO_SERIALIZE)) RtlLeaveCriticalSection( &heapPtr->critSection );
+         if (!ret && (flags & HEAP_GENERATE_EXCEPTIONS)) RtlRaiseStatus( STATUS_NO_MEMORY );
+         TRACE("(%p,%08x,%08lx): returning %p\n", heap, flags, size, ret );
++_account(ret, size);
+         return ret;
+     }
+ 
+@@ -1719,6 +1739,7 @@ PVOID WINAPI RtlAllocateHeap( HANDLE heap, ULONG flags, SIZE_T size )
+     if (!(flags & HEAP_NO_SERIALIZE)) RtlLeaveCriticalSection( &heapPtr->critSection );
+ 
+     TRACE("(%p,%08x,%08lx): returning %p\n", heap, flags, size, pInUse + 1 );
++_account(pInUse+1, size);
+     return pInUse + 1;
+ }
+ 
+@@ -1772,6 +1793,7 @@ BOOLEAN WINAPI RtlFreeHeap( HANDLE heap, ULONG flags, PVOID ptr )
+ 
+     if (!(flags & HEAP_NO_SERIALIZE)) RtlLeaveCriticalSection( &heapPtr->critSection );
+     TRACE("(%p,%08x,%p): returning TRUE\n", heap, flags, ptr );
++_account(ptr, 0);
+     return TRUE;
+ 
+ error:
