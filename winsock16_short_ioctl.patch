@@ -1,0 +1,19 @@
+diff --git a/dlls/winsock.dll16/socket.c b/dlls/winsock.dll16/socket.c
+index ac325cd..8ff97fa 100644
+--- a/dlls/winsock.dll16/socket.c
++++ b/dlls/winsock.dll16/socket.c
+@@ -558,6 +558,14 @@ SEGPTR WINAPI inet_ntoa16(struct in_addr in)
+  */
+ INT16 WINAPI ioctlsocket16(SOCKET16 s, LONG cmd, u_long *argp)
+ {
++    /* The 16-bit version of winsock allowed to use short commands. The most
++     * notable example of program using this is Netscape Navigator 3.0 */
++    switch (cmd)
++    {
++        case LOWORD(FIONBIO): cmd = FIONBIO; break;
++        case LOWORD(FIONREAD): cmd = FIONREAD; break;
++        case LOWORD(SIOCATMARK): cmd = SIOCATMARK; break;
++    }
+     return ioctlsocket( s, cmd, argp );
+ }
+ 
