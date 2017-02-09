@@ -1,0 +1,113 @@
+diff --git a/dlls/ws2_32/socket.c b/dlls/ws2_32/socket.c
+index 2a2c809..a0d68fe 100644
+--- a/dlls/ws2_32/socket.c
++++ b/dlls/ws2_32/socket.c
+@@ -506,6 +506,7 @@ static const int ws_socktype_map[][2] =
+     MAP_OPTION( SOCK_DGRAM ),
+     MAP_OPTION( SOCK_STREAM ),
+     MAP_OPTION( SOCK_RAW ),
++    MAP_OPTION( SOCK_SEQPACKET ),
+     {FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO},
+ };
+ 
+@@ -1128,8 +1129,8 @@ convert_proto_w2u(int windowsproto) {
+     	if (ws_proto_map[i][0] == windowsproto)
+ 	    return ws_proto_map[i][1];
+ 
+-    /* check for extended IPX */
+-    if (IS_IPX_PROTO(windowsproto))
++    /* check for extended IPX or SPX */
++    if (IS_IPX_PROTO(windowsproto) || windowsproto == WS_NSPROTO_SPX)
+       return windowsproto;
+ 
+     FIXME("unhandled Windows socket protocol %d\n", windowsproto);
+@@ -1144,9 +1145,9 @@ convert_proto_u2w(int unixproto) {
+     	if (ws_proto_map[i][1] == unixproto)
+ 	    return ws_proto_map[i][0];
+ 
+-    /* if value is inside IPX range just return it - the kernel simply
++    /* if value is inside IPX/SPX range just return it - the kernel simply
+      * echoes the value used in the socket() function */
+-    if (IS_IPX_PROTO(unixproto))
++    if (IS_IPX_PROTO(unixproto) || unixproto == WS_NSPROTO_SPX)
+       return unixproto;
+ 
+     FIXME("unhandled UNIX socket protocol %d\n", unixproto);
+diff --git a/dlls/ws2_32/tests/sock.c b/dlls/ws2_32/tests/sock.c
+index 2252245..26863c0 100644
+--- a/dlls/ws2_32/tests/sock.c
++++ b/dlls/ws2_32/tests/sock.c
+@@ -2223,14 +2223,14 @@ static void test_WSASocket(void)
+     {
+         err = WSAGetLastError();
+         ok(err == WSAEAFNOSUPPORT || broken(err == WSAEPROTONOSUPPORT), "Expected 10047, received %d\n", err);
+-        skip("IPX is not supported\n");
++        skip("NSPROTO_IPX is not supported\n");
+     }
+     else
+     {
+         WSAPROTOCOL_INFOA info;
+         closesocket(sock);
+ 
+-        trace("IPX is supported\n");
++        trace("NSPROTO_IPX is supported\n");
+ 
+         sock = WSASocketA(0, 0, NSPROTO_IPX, NULL, 0, 0);
+         ok(sock != INVALID_SOCKET, "Failed to create socket: %d\n",
+@@ -2281,6 +2281,56 @@ static void test_WSASocket(void)
+           closesocket(sock);
+         }
+     }
++
++    /* NSPROTO_SPX socket tests */
++
++    SetLastError(0xdeadbeef);
++    sock = WSASocketA(AF_IPX, SOCK_SEQPACKET, NSPROTO_SPX, NULL, 0, 0);
++    if (sock == INVALID_SOCKET)
++    {
++        err = WSAGetLastError();
++todo_wine
++        ok(err == WSAESOCKTNOSUPPORT || broken(err == WSAEAFNOSUPPORT || err == WSAEPROTONOSUPPORT),
++           "Expected 10044 or 10047, received %d\n", err);
++        skip("NSPROTO_SPX is not supported\n");
++    }
++    else
++    {
++        WSAPROTOCOL_INFOA info;
++        closesocket(sock);
++
++        trace("NSPROTO_SPX is supported\n");
++
++        sock = WSASocketA(0, 0, NSPROTO_SPX, NULL, 0, 0);
++        ok(sock != INVALID_SOCKET, "Failed to create socket: %d\n",
++                WSAGetLastError());
++
++        size = sizeof(socktype);
++        socktype = 0xdead;
++        err = getsockopt(sock, SOL_SOCKET, SO_TYPE, (char *) &socktype, &size);
++        ok(!err,"getsockopt failed with %d\n", WSAGetLastError());
++        ok(socktype == SOCK_SEQPACKET, "Wrong socket type, expected %d received %d\n",
++           SOCK_SEQPACKET, socktype);
++
++        /* check socket family, type and protocol */
++        size = sizeof(WSAPROTOCOL_INFOA);
++        err = getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFOA, (char *) &info, &size);
++        ok(!err,"getsockopt failed with %d\n", WSAGetLastError());
++        ok(info.iProtocol == NSPROTO_SPX, "expected protocol %d, received %d\n",
++           NSPROTO_SPX, info.iProtocol);
++        ok(info.iAddressFamily == AF_IPX, "expected family %d, received %d\n",
++           AF_IPX, info.iProtocol);
++        ok(info.iSocketType == SOCK_SEQPACKET, "expected type %d, received %d\n",
++           SOCK_SEQPACKET, info.iSocketType);
++        closesocket(sock);
++
++        /* SOCK_SEQPACKET does not support IPPROTO_UDP */
++        SetLastError(0xdeadbeef);
++        ok(WSASocketA(AF_IPX, SOCK_SEQPACKET, IPPROTO_UDP, NULL, 0, 0) == INVALID_SOCKET,
++           "WSASocketA should have failed\n");
++        err = WSAGetLastError();
++        ok(err == WSAEPROTONOSUPPORT, "Expected 10043, received %d\n", err);
++    }
+ }
+ 
+ static void test_WSADuplicateSocket(void)
