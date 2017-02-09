@@ -1,0 +1,90 @@
+From f7b400415784924d1f39437d3a6da73eea8227c1 Mon Sep 17 00:00:00 2001
+From: Bruno Jesus <00cpxxx@gmail.com>
+Date: Thu, 9 Feb 2017 13:45:49 -0200
+Subject: [PATCH 2/2] iphlpapi: Use /etc/resolv.conf as fallback for retrieving
+ DNS servers
+
+Signed-off-by: Bruno Jesus <00cpxxx@gmail.com>
+---
+ dlls/iphlpapi/iphlpapi_main.c | 65 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 64 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/iphlpapi/iphlpapi_main.c b/dlls/iphlpapi/iphlpapi_main.c
+index 1daf54d..94f2720 100644
+--- a/dlls/iphlpapi/iphlpapi_main.c
++++ b/dlls/iphlpapi/iphlpapi_main.c
+@@ -1355,7 +1355,70 @@ static int get_dns_servers( SOCKADDR_STORAGE *servers, int num, BOOL ip4_only )
+ 
+ static int get_dns_servers( SOCKADDR_STORAGE *servers, int num, BOOL ip4_only )
+ {
+-    FIXME("Unimplemented on this system\n");
++    /* if no good ways are available try parsing /etc/resolv.conf */
++    FILE *fp;
++
++    if ((fp = fopen("/etc/resolv.conf", "r")))
++    {
++        char buf[512], *ptr, *end;
++        int family, count[2] = {0, 0};
++        SOCKADDR_STORAGE *addr = servers;
++        union
++        {
++            struct in_addr ip;
++            struct in6_addr ip6;
++            char ptr;
++        } data;
++
++        WARN("Unimplemented on this system, trying /etc/resolv.conf fallback\n");
++
++        while ((ptr = fgets(buf, sizeof(buf), fp)))
++        {
++            if (strncmp(ptr, "nameserver", 10)) continue;
++            ptr += 10;
++            while (*ptr == ' ') ptr++;
++
++            end = ptr;
++            while (*end != '\0' && *end != '\n' && *end != '#') end++;
++            *end = '\0';
++
++            family = strchr(ptr, ':') ? AF_INET6 : AF_INET;
++            if (family == AF_INET6 && ip4_only) continue;
++
++#ifdef HAVE_INET_PTON
++            if (inet_pton(family, ptr, &data.ptr) != 1) continue;
++            count[family == AF_INET ? 0 : 1]++;
++#else
++            if (family == AF_INET6 || inet_aton(ptr, &data.ip) != 1) continue;
++            count[0]++;
++#endif
++            if (!servers || !num) continue;
++
++            if (family == AF_INET6)
++            {
++                struct sockaddr_in6 ip6;
++
++                memset(&ip6, 0, sizeof(ip6));
++                memcpy(&ip6.sin6_addr, &data.ip6, sizeof(data.ip6));
++                sockaddr_in6_to_WS_storage(addr, &ip6);
++            }
++            else
++            {
++                struct sockaddr_in ip4;
++
++                ip4.sin_port = 0;
++                ip4.sin_addr.s_addr = data.ip.s_addr;
++                sockaddr_in_to_WS_storage(addr, &ip4);
++            }
++
++            if (++addr >= servers + num) break;
++        }
++
++        fclose(fp);
++        return ip4_only ? count[0] : count[0] + count[1];
++    }
++    else
++        FIXME("Unimplemented on this system\n");
+     return 0;
+ }
+ #endif
+-- 
+2.9.3
+
