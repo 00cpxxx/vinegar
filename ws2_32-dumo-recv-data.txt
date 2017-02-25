@@ -1,0 +1,25 @@
+diff --git a/dlls/ws2_32/socket.c b/dlls/ws2_32/socket.c
+index 3c8c806..ce22747 100644
+--- a/dlls/ws2_32/socket.c
++++ b/dlls/ws2_32/socket.c
+@@ -7893,6 +7893,20 @@ static int WS2_recv_base( SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount,
+     }
+ 
+     TRACE(" -> %i bytes\n", n);
++
++    {
++    int j, l; char fname[32];
++    FILE *arq;
++    sprintf(fname, "/tmp/sock-%04lx.txt", s);
++    arq = fopen(fname, "ab");
++    for (i = l = 0; i < dwBufferCount; i++)
++    {
++        for (j = 0; j < lpBuffers[i].len && l < n; j++, l++)
++            fprintf(arq, "%c", (unsigned char)lpBuffers[i].buf[j]);
++    }
++    fclose(arq);
++    }
++
+     if (wsa != &localwsa) HeapFree( GetProcessHeap(), 0, wsa );
+     release_sock_fd( s, fd );
+     _enable_event(SOCKET2HANDLE(s), FD_READ, 0, 0);
