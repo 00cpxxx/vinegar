@@ -1,0 +1,28 @@
+# This is a special command I use to test applications in clean prefix faster.
+# I have a wine32 and wine64 parameters pointing to the compiled wine git.
+# Inside the console "wine" is an alias to the correct external command.
+# It works in bash, the low quality of this file demonstrates my unskilled
+# talent in shell scripts.
+#
+# -- Bruno Jesus 2013 - Unlicense
+
+TEMPBASE=/media/ramdisk
+
+if [ "x$1" != "xwine32" -a "x$1" != "xwine64" ]; then
+  echo "Incorrect first parameter, must be wine32 or wine64"
+  exit 1;
+fi
+
+TEMPFILE=`tempfile`
+TEMPPART=`echo $TEMPFILE | cut -b 6-`
+WINEPREFIX="$TEMPBASE/$TEMPPART"
+mkdir -p "$WINEPREFIX"
+WINEPREFIX=$WINEPREFIX $1 winecfg &
+WINEVER=`$1 --version`
+sleep 2
+echo "printf \"==================================================\n   ARCH      $1\n   VERSION   $WINEVER\n   PREFIX    $WINEPREFIX\n==================================================\n\"; export WINEPREFIX=$WINEPREFIX;alias wine=$1" > $TEMPFILE
+chmod +x $TEMPFILE
+uxterm -e "cd $WINEPREFIX/drive_c && source $TEMPFILE && /bin/bash" &
+sleep 2
+rm $TEMPFILE
+exit 0
