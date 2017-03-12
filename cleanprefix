@@ -8,7 +8,9 @@
 #
 # -- Bruno Jesus 2013 - Unlicense - Use at your own risk
 
-TEMPBASE=/media/ramdisk
+TEMPBASE=/media/ramdisk #base path to where store the new prefix
+
+MINSPACE=614400 #600Mb for clean wine (in kb)
 
 if [ "x$1" != "xwine32" -a "x$1" != "xwine64" ]; then
   echo "Incorrect first parameter, must be wine32 or wine64"
@@ -21,6 +23,13 @@ if ! type $1 2> /dev/null; then
 fi
 
 TEMPFILE=`tempfile`
+FREESPACE=`df $TEMPBASE | awk '/[0-9]%/{print $(NF-2)}'`
+if [ "$FREESPACE" -lt "$MINSPACE" ]; then
+  echo "Not enough free space on target partition."
+  rm $TEMPFILE
+  exit 3
+fi
+
 TEMPPART=`echo $TEMPFILE | cut -b 6-`
 WINEPREFIX="$TEMPBASE/$TEMPPART"
 mkdir -p "$WINEPREFIX"
@@ -31,5 +40,5 @@ echo "printf \"==================================================\n   ARCH      
 chmod +x $TEMPFILE
 uxterm -T "$1 - $WINEPREFIX" -e "cd $WINEPREFIX/drive_c && /bin/bash --init-file $TEMPFILE" &
 sleep 2
-#rm $TEMPFILE
+rm $TEMPFILE
 exit 0
