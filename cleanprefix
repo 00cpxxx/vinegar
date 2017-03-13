@@ -1,5 +1,5 @@
 # This is a special command I use to test applications in clean prefix faster.
-# I have a wine32 and wine64 parameters pointing to the compiled wine git.
+# I have a wine32 and wine64 shortcuts pointing to the compiled wine git.
 # Inside the console "wine" is an alias to the correct external command.
 # It works in bash, the low quality of this file demonstrates my unskilled
 # talent in shell scripts.
@@ -25,7 +25,9 @@ fi
 TEMPFILE=`tempfile`
 FREESPACE=`df $TEMPBASE | awk '/[0-9]%/{print $(NF-2)}'`
 if [ "$FREESPACE" -lt "$MINSPACE" ]; then
-  echo "Not enough free space on target partition."
+  FREEMSG="Not enough free space on target partition."
+  zenity --error --title "Disk error" --text "$FREEMSG"
+  echo $FREEMSG
   rm $TEMPFILE
   exit 3
 fi
@@ -34,9 +36,10 @@ TEMPPART=`echo $TEMPFILE | cut -b 6-`
 WINEPREFIX="$TEMPBASE/$TEMPPART"
 mkdir -p "$WINEPREFIX"
 WINEPREFIX=$WINEPREFIX $1 winecfg &
+WINE=$1 #for winetricks
 WINEVER=`$1 --version`
 sleep 2
-echo "printf \"==================================================\n   ARCH      $1\n   VERSION   $WINEVER\n   PREFIX    $WINEPREFIX\n==================================================\n\"; export WINEPREFIX=$WINEPREFIX;alias wine=$1;alias __suicideprefix-yes=\"rm -rf '$WINEPREFIX';kill -9 \$\$\"" > $TEMPFILE
+echo "printf \"==================================================\n   ARCH      $1\n   VERSION   $WINEVER\n   PREFIX    $WINEPREFIX\n==================================================\n\"; export WINEPREFIX=$WINEPREFIX; export WINE=$1;alias wine=$1;alias __suicideprefix-yes=\"wineserver -k;sleep 1;rm -rf '$WINEPREFIX';kill -9 \$\$\"" > $TEMPFILE
 chmod +x $TEMPFILE
 uxterm -T "$1 - $WINEPREFIX" -e "cd $WINEPREFIX/drive_c && /bin/bash --init-file $TEMPFILE" &
 sleep 2
