@@ -11,7 +11,7 @@ In order to install 32-bit libraries in Debian to compile Wine make a i386 deboo
 <pre>
 bruno@Note2:~$ cat /usr/local/bin/wrap32 
 
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:/media/1898E4E616F9684B/debian32/usr/lib/i386-linux-gnu:/lib/x86_64-linux-gnu:/media/1898E4E616F9684B/debian32/lib/i386-linux-gnu" LIBRARY_PATH="$LD_LIBRARY_PATH" "$@"
+GST_PLUGIN_SYSTEM_PATH="$GST_PLUGIN_SYSTEM_PATH:/media/1898E4E616F9684B/debian32/usr/lib/i386-linux-gnu/gstreamer-1.0" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/media/1898E4E616F9684B/debian32/usr/lib:/usr/lib/x86_64-linux-gnu:/media/1898E4E616F9684B/debian32/usr/lib/i386-linux-gnu:/lib/x86_64-linux-gnu:/media/1898E4E616F9684B/debian32/lib/i386-linux-gnu" LIBRARY_PATH="$LD_LIBRARY_PATH" "$@"
 </pre>
 
 Now compile anything using CC="wrap32 gcc" and run any 32-bit using "wrap32 whatever".
