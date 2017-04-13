@@ -19,7 +19,7 @@ fi
 
 PROG=winecfg
 if [ "x$2" != "x" ]; then
-  PROG=$2
+  PROG="$2"
 fi
 
 if ! type $1 2> /dev/null; then
@@ -37,15 +37,17 @@ if [ "$FREESPACE" -lt "$MINSPACE" ]; then
   exit 3
 fi
 
+notify-send --expire-time 3000 --icon /usr/share/icons/wine.svg "Clean Wine" "Starting a new $1 Wine prefix..."
+
 TEMPPART=`echo $TEMPFILE | cut -b 6-`
 WINEPREFIX="$TEMPBASE/$TEMPPART"
 mkdir -p "$WINEPREFIX"
-WINEPREFIX=$WINEPREFIX $1 $PROG &
+WINEPREFIX=$WINEPREFIX $1 "$PROG" &
 WINE=$1 #for winetricks
 WINEVER=`$1 --version`
-sleep 2
 echo "printf \"==================================================\n   ARCH      $1\n   VERSION   $WINEVER\n   PREFIX    $WINEPREFIX\n   PROGRAM   $PROG\n==================================================\n\"; export WINEPREFIX=$WINEPREFIX; export WINE=$1;alias wine=$1;alias __suicideprefix-yes=\"wineserver -k;sleep 1;rm -rf '$WINEPREFIX';kill -9 \$\$\"" > $TEMPFILE
 chmod +x $TEMPFILE
+sleep 2
 uxterm -T "$1 - $WINEPREFIX" -e "cd $WINEPREFIX/drive_c && /bin/bash --init-file $TEMPFILE" &
 sleep 2
 rm $TEMPFILE
