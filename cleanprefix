@@ -45,7 +45,7 @@ mkdir -p "$WINEPREFIX"
 WINEPREFIX=$WINEPREFIX $1 "$PROG" &
 WINE=$1 #for winetricks
 WINEVER=`$1 --version`
-echo "printf \"==================================================\n   ARCH      $1\n   VERSION   $WINEVER\n   PREFIX    $WINEPREFIX\n   PROGRAM   $PROG\n==================================================\n\"; export WINEPREFIX=$WINEPREFIX; export WINE=$1;alias wine=$1;alias __suicideprefix-yes=\"wineserver -k;sleep 1;rm -rf '$WINEPREFIX';kill -9 \$\$\"" > $TEMPFILE
+echo "printf \"==================================================\n   ARCH      $1\n   VERSION   $WINEVER\n   PREFIX    $WINEPREFIX\n   PROGRAM   $PROG\n==================================================\n\"; export WINEPREFIX=$WINEPREFIX; export WINE=$1;alias rootc=\"cd $WINEPREFIX/drive_c\"; alias wine=$1;alias __suicideprefix-yes=\"wineserver -k;sleep 1;rm -rf '$WINEPREFIX';kill -9 \$\$\"" > $TEMPFILE
 chmod +x $TEMPFILE
 sleep 2
 uxterm -T "$1 - $WINEPREFIX" -e "cd $WINEPREFIX/drive_c && /bin/bash --init-file $TEMPFILE" &
