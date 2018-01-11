@@ -1,0 +1,41 @@
+diff --git a/dlls/dinput/effect_linuxinput.c b/dlls/dinput/effect_linuxinput.c
+index d3fede5..3c40eff 100644
+--- a/dlls/dinput/effect_linuxinput.c
++++ b/dlls/dinput/effect_linuxinput.c
+@@ -175,13 +175,35 @@ static HRESULT WINAPI LinuxInputEffectImpl_Download(
+ {
+     LinuxInputEffectImpl *This = impl_from_IDirectInputEffect(iface);
+     int ret, old_effect_id;
++    struct ff_effect fallback, *effect = &This->effect;
+ 
+     TRACE("(this=%p)\n", This);
++
++    /* Convert unsupported events to periodic */
++    if (effect->type == FF_CONSTANT)
++    {
++        fallback = *effect;
++        fallback.type = FF_PERIODIC;
++        fallback.u.periodic.waveform = FF_SQUARE;
++        fallback.u.periodic.magnitude = This->effect.u.constant.level;
++        fallback.u.periodic.period = 1000;
++        fallback.u.periodic.offset = 0;
++        fallback.u.periodic.phase = 0;
++        fallback.u.periodic.custom_len = 0;
++        effect = &fallback;
++        printf("CONVERT!\n");
++    }
++
+     ff_dump_effect(&This->effect);
+ 
+     old_effect_id = This->effect.id;
+-    if (ioctl(*(This->fd), EVIOCSFF, &This->effect) != -1)
++    if (ioctl(*(This->fd), EVIOCSFF, effect) != -1)
++    {
++        if (&fallback == effect)
++            This->effect.id = fallback.id;
++        printf("OUT ID = %d\n", This->effect.id);
+         return DI_OK;
++    }
+ 
+     /* Linux kernel < 3.14 has a bug that incorrectly assigns an effect ID even
+      * on error, restore it here if that is the case. */
